@@ -118,9 +118,6 @@ local function wbc(self, event, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, 
     end
   elseif event == "CHAT_MSG_ADDON" then
     prefix, msg = arg1, arg2
-    if prefix == "wbcrep" then
-      print("got broadcast " .. prefix .. " " .. msg)
-    end
     if prefix == "wbcrep" and not has_value(GuildReps, msg) then
       table.insert(GuildReps, msg)
     end
