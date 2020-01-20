@@ -6,6 +6,6 @@
 ## Author: Katyparry @ Zandalar Tribe
 ## Version: 0.0.1
 
-## SavedVariables:
+## SavedVariables: WBCPlayers, WBCGuildPlayers, WBCGuilds, GuildReps
 
 WBC.lua
