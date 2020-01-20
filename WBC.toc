@@ -1,0 +1,11 @@
+## Interface: 11303
+## Title: WBC
+
+## Notes: invite addon for the world boss coalition
+
+## Author: Katyparry @ Zandalar Tribe
+## Version: 0.0.1
+
+## SavedVariables:
+
+WBC.lua
