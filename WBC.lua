@@ -418,6 +418,7 @@ SlashCmdList["WBC"] = function(functionName)
         return
       end
       local taxiName = name .. " " .. guildName .. " " .. arg2 .. " active"
+      table.insert(WBCTaxis, taxiName)
       syncDB(taxiName, "taxi")
       WBCTaxi = "yes"
       print("registered you as a taxi for " .. arg2)
