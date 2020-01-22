@@ -6,7 +6,7 @@
 
 ex: /wbc boss kazzak or /wbc boss azuregos (all lowercase)
 
-this will invite all guild reps, and then try to invite your guild members if they are in the correct zone
+this will invite guild reps, and then try to invite your guild members if they are in the correct zone
 
 ### stop an event
 `/wbc off`
@@ -24,7 +24,11 @@ this will register yourself as a taxi at kazzaks location
 
 this will remove a person from the list of active reps or taxis
 
-ex: /wbc remove taxi <player name>
+ex: /wbc remove taxi Myname
+
+this is mainly for taxis that change location, if you remove a rep they will be added again next time they log in
+
+unless they uninstall the addon
 
 
 `/wbc taxi <boss>`
