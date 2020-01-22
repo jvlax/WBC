@@ -63,6 +63,9 @@ local function syncDB(msg, role)
       debug("syncing " .. msg, 2)
       local name, guild, boss, status = strsplit(" ", msg, 4)
       local lName, lGuild, lBoss, lStatus = strsplit(" ", WBCTaxis[player], 4)
+      if not has_value(WBCTaxis, name .. " " .. guild .. " " .. boss .. " inactive") and not has_value(WBCTaxis, name .. " " .. guild .. " " .. boss .. " active") then
+        table.insert(WBCTaxis, msg)
+      end
       if name == lName and status == "active" then
         debug("checking to see if I should change status to active", 1)
         if not has_value(WBCTaxis, msg) then
@@ -97,6 +100,9 @@ local function syncDB(msg, role)
     for player = 1, #GuildReps do
       local name, guild, status = strsplit(" ", msg, 3)
       local lName, lGuild, lStatus = strsplit(" ", GuildReps[player], 3)
+      if not has_value(GuildReps, name .. " " .. guild .. " inactive") and not has_value(GuildReps, name .. " " .. guild .. " active") then
+        table.insert(GuildReps, msg)
+      end
       if name == lName and status == "active" then
         if not has_value(GuildReps, msg) then
           debug("adding active rep " .. msg, 1)
