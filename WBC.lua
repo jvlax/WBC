@@ -13,6 +13,8 @@ WBCbossZone = "none"
 taxiService = "offline"
 WBCBroadCastCounter = 0
 WBCDrill = "no"
+WBCDebug = "off"
+WBCDebugLevel = "off"
 local realm = "-ZandalarTribe"
 
 local function has_value (tab, val)
@@ -24,6 +26,20 @@ local function has_value (tab, val)
   return false
 end
 
+local function get_index(tab, val)
+  local index={}
+  for k,v in ipairs(tab) do
+   index[v]=k
+  end
+  return index[val]
+end
+
+local function debug(msg, debugLevel)
+  if WBCDebug == "on" and debugLevel <= WBCDebugLevel then
+    print(msg)
+  end
+end
+
 local function registerMe()
   local guildName, guildRankName, guildRankIndex, realm = GetGuildInfo("player")
   if guildName ~= nil then
@@ -31,36 +47,81 @@ local function registerMe()
     local guildRepName = name .. " " .. guildName .. " active"
     if not has_value(GuildReps, guildRepName) then
       table.insert(GuildReps, guildRepName)
+      debug("registered " .. guildRepName, 1)
       C_ChatInfo.SendAddonMessage("wbcrep", guildRepName, "GUILD")
       C_ChatInfo.SendAddonMessage("wbcrep", guildRepName, "SAY")
+      debug("sent wbcrep sync message for " .. guildRepName, 1)
     end
   end
 end
 
-local function removeRepFromDB(playerName)
-  for player = 1, #GuildReps do
-    local name, guild, status = strsplit(" ", GuildReps[player], 3)
-    if name == playerName then
-      print("removing " .. playerName .. " from " .. "reps")
-      local removeName = name .. " " .. guild .. "inactive"
-      table.remove(GuildReps, player)
-      table.insert(GuildReps, removeName)
-      C_ChatInfo.SendAddonMessage("wbcrep", removeName, "GUILD")
-      C_ChatInfo.SendAddonMessage("wbcrep", removeName, "SAY")
+local function syncDB(msg, role)
+  -- todo check if there is pointers available in lua and if so rewrite using that DRY!
+  debug("syncing db for " .. role, 2)
+  if role == "taxi" then
+    for player = 1, #WBCTaxis do
+      debug("syncing " .. msg, 2)
+      local name, guild, boss, status = strsplit(" ", msg, 4)
+      local lName, lGuild, lBoss, lStatus = strsplit(" ", WBCTaxis[player], 4)
+      if name == lName and status == "active" then
+        debug("checking to see if I should change status to active", 1)
+        if not has_value(WBCTaxis, msg) then
+          debug("yes I should", 1)
+          debug("adding active taxi " .. msg, 1)
+          table.insert(WBCTaxis, msg)
+          if has_value(WBCTaxis, name .. " " .. guild .. " " .. boss .. " inactive") then
+            debug("changing " .. msg .. " to active", 1)
+            table.remove(WBCTaxis, get_index(WBCTaxis, name .. " " .. guild .. " " .. boss .. " inactive"))
+          end
+          C_ChatInfo.SendAddonMessage("wbctaxisync", msg, "GUILD")
+          C_ChatInfo.SendAddonMessage("wbctaxisync", msg, "SAY")
+          debug("sent sync for taxi " .. msg, 2)
+        end
+      debug("checking to see if I should change status to inactive", 1)
+      elseif name == lName and status == "inactive" then
+        if not has_value(WBCTaxis, msg) then
+          debug("yes I should", 1)
+          debug("removing inactive taxi " .. msg, 1)
+          table.insert(WBCTaxis, msg)
+          if has_value(WBCTaxis, name .. " " .. guild .. " " .. boss .. " active") then
+            debug("changing " .. msg .. " to inactive", 1)
+            table.remove(WBCTaxis, get_index(WBCTaxis, name .. " " .. guild .. " " .. boss .. " active"))
+          end
+          C_ChatInfo.SendAddonMessage("wbctaxisync", msg, "GUILD")
+          C_ChatInfo.SendAddonMessage("wbctaxisync", msg, "SAY")
+          debug("sent sync for taxi " .. msg, 2)
+        end
+      end
     end
-  end
-end
-
-local function removeTaxiFromDB(playerName)
-  for player = 1, #WBCTaxis do
-    local name, guild, boss, status = strsplit(" ", WBCTaxis[player], 4)
-    if name == playerName then
-      print("removing " .. playerName .. " from " .. "taxis")
-      local removeName = name .. " " .. guild .. " " .. boss .. " inactive"
-      table.remove(WBCTaxis, player)
-      table.insert(WBCTaxis, removeName)
-      C_ChatInfo.SendAddonMessage("wbctaxisync", removeName, "GUILD")
-      C_ChatInfo.SendAddonMessage("wbctaxisync", removeName, "SAY")
+  elseif role == "rep" then
+    for player = 1, #GuildReps do
+      local name, guild, status = strsplit(" ", msg, 3)
+      local lName, lGuild, lStatus = strsplit(" ", GuildReps[player], 3)
+      if name == lName and status == "active" then
+        if not has_value(GuildReps, msg) then
+          debug("adding active rep " .. msg, 1)
+          table.insert(GuildReps, msg)
+          if has_value(GuildReps, name .. " " .. guild .. " " .. " inactive") then
+            debug("changing " .. msg .. " to active", 1)
+            table.remove(GuildReps, get_index(GuildReps, name .. " " .. guild .. " " .. " inactive"))
+          end
+          C_ChatInfo.SendAddonMessage("wbcrep", msg, "GUILD")
+          C_ChatInfo.SendAddonMessage("wbcrep", msg, "SAY")
+          debug("sent sync for rep " .. msg, 2)
+        end
+      elseif name == lName and status == "inactive" then
+        if not has_value(GuildReps, msg) then
+          debug("removing inactive rep " .. msg, 1)
+          table.insert(GuildReps, msg)
+          if has_value(GuildReps, name .. " " .. guild .. " " .. " active") then
+            debug("changing " .. msg .. " to inactive", 1)
+            table.remove(GuildReps, get_index(GuildReps, name .. " " .. guild .. " " .. " active"))
+          end
+          C_ChatInfo.SendAddonMessage("wbcrep", msg, "GUILD")
+          C_ChatInfo.SendAddonMessage("wbcrep", msg, "SAY")
+          debug("sent sync for rep " .. msg, 2)
+        end
+      end
     end
   end
 end
@@ -73,7 +134,7 @@ end
 local function getRaidInfo()
   local raid = {}
   for i = 1, 40 do
-    name, rank, subgroup, level, class, fileName, zone, online, isDead, role, isML, combatRole = GetRaidRosterInfo(i)
+    local name, rank, subgroup, level, class, fileName, zone, online, isDead, role, isML, combatRole = GetRaidRosterInfo(i)
     table.insert(raid, name)
   end
   return raid
@@ -82,7 +143,7 @@ end
 local function getMyGuildies()
   local readyPlayers = {}
   for i = 1, GetNumGuildMembers() do
-    name, rankName, rankIndex, level, classDisplayName, zone, publicNote, officerNote, isOnline, status, class, achievementPoints, achievementRank, isMobile, canSoR, repStanding, GUID = GetGuildRosterInfo(i)
+    local name, rankName, rankIndex, level, classDisplayName, zone, publicNote, officerNote, isOnline, status, class, achievementPoints, achievementRank, isMobile, canSoR, repStanding, GUID = GetGuildRosterInfo(i)
     if (zone == WBCbossZone or zone == WBCbossZoneFR) and isOnline and level == 60 then
       table.insert(readyPlayers, shortName(name))
     end
@@ -119,8 +180,7 @@ local function invitePlayers()
 end
 
 local function startRaid()
-  print("starting raid for")
-  print(WBCboss)
+  print("starting raid for " .. WBCboss)
   if WBCboss == "kazzak" then
     WBCbossZone = "Blasted Lands"
     WBCbossZoneFR = "Terres foudroyées \(Blasted Lands\)"
@@ -136,6 +196,7 @@ local function inviteTaxis()
     taxiName, taxiGuild, taxiBoss, status = strsplit(" ", WBCTaxis[taxi], 4)
     raid = getRaidInfo()
     if #raid >= 3 then
+      debug("taxi service is online", 1)
       taxiService = "online"
     end
     if not has_value(raid, taxiName) and taxiBoss == WBCboss and status == "active" then
@@ -152,7 +213,7 @@ local function guildBroadcast()
   local guildBroadcastMessage = ""
   local taxiAvailable = ""
   if taxiService == "online" then
-    taxiAvailable = "\{rt1\}Taxi service is online\{rt1\}\nwhisper me wbcinv to get invited to taxi raid"
+    taxiAvailable = "\{rt1\}Taxi service is online\{rt1\}\nwhisper me \"wbcinv\" to get invited to taxi raid"
   elseif taxiService == "offline" then
     taxiAvailable = "\{rt7\}Taxi service is offline\{rt7\}"
   end
@@ -188,9 +249,9 @@ function frame3:onUpdate(sinceLastUpdate)
     WBCBroadCastCounter = WBCBroadCastCounter + 1
     local guildName, guildRankName, guildRankIndex, realm = GetGuildInfo("player");
     if WBCBroadCastCounter >= 6 then
-      print("broadcasting for " .. guildName)
+      debug("broadcasting for " .. guildName, 1)
       C_ChatInfo.SendAddonMessage("wbcguildbroadcast", guildName, "RAID")
-      -- guildBroadcast()
+      guildBroadcast()
       WBCBroadCastCounter = 0
       for taxi = 1, #WBCTaxis do
         C_ChatInfo.SendAddonMessage("wbctaxisync", WBCTaxis[taxi], "RAID")
@@ -204,14 +265,14 @@ end
 function frame4:onUpdate(sinceLastUpdate)
   self.sinceLastUpdate = (self.sinceLastUpdate or 0) + sinceLastUpdate;
   if ( self.sinceLastUpdate >= 10 ) then -- in seconds
-    print("syncing databases")
+    debug("syncing databases", 2)
     for taxi = 1, #WBCTaxis do
-      print("syncing taxis " .. WBCTaxis[taxi])
+      debug("syncing taxis " .. WBCTaxis[taxi], 2)
       C_ChatInfo.SendAddonMessage("wbctaxisync", WBCTaxis[taxi], "GUILD")
       C_ChatInfo.SendAddonMessage("wbctaxisync", WBCTaxis[taxi], "SAY")
     end
     for rep = 1, #GuildReps do
-      print("syncing reps " .. GuildReps[rep])
+      debug("syncing reps " .. GuildReps[rep], 2)
       C_ChatInfo.SendAddonMessage("wbcrep", GuildReps[rep], "GUILD")
       C_ChatInfo.SendAddonMessage("wbcrep", GuildReps[rep], "SAY")
     end
@@ -254,41 +315,36 @@ local function wbc(self, event, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, 
     end
   elseif event == "CHAT_MSG_ADDON" then
     prefix, msg = arg1, arg2
-    if prefix == "wbcrep" and not has_value(GuildReps, msg) then
-      local name, guild, status = strsplit(" ", msg)
-      if status == "inactive" then
-        removeRepFromDB(name)
-      elseif status == "active" then
-        print("adding " .. msg .. " to db")
-        table.insert(GuildReps, msg)
-      end
+    if prefix == "wbcrep" then
+      debug("incomming wbcrep message " .. msg, 2)
+      syncDB(msg, "rep")
     end
     if prefix == "wbcboss" and WBCboss == "none" then
+      debug("I should be in the kill raid now, will invite guild reps if needed")
       WBCboss = msg
       inviteReps()
       startRaid()
     end
-    if prefix == "wbctaxisync" and not has_value(WBCTaxis, msg) then
-      local name, guild, status = strsplit(" ", msg)
-      if status == "inactive" then
-        removeRepFromDB(name)
-      elseif status == "active" then
-        print("adding " .. msg .. " to db")
-        table.insert(WBCTaxis, msg)
-      end
+    if prefix == "wbctaxisync" then
+      debug("incomming wbctaxisync message " .. msg, 2)
+      syncDB(msg, "taxi")
     end
     if prefix == "wbctaxiinv" and WBCTaxi == "yes" then
+      debug("got wbctaxiinv message for " .. msg, 1)
       WBCboss = msg
       inviteTaxis()
     end
     if prefix == "wbcguildbroadcast" and WBCTaxi == "yes" then
+      debug("got wbcguildbroadcast message", 1)
       local guildName, guildRankName, guildRankIndex, realm = GetGuildInfo("player");
       if msg == guildName then
+        debug("guild broadcast sent from my guildie I will reset my counter", 1)
         WBCBroadCastCounter = 0
       end
     end
   elseif event == "CHAT_MSG_WHISPER" and WBCTaxi == "yes" then
     if arg1 == "wbcinv" then
+      debug("got invite request from " .. arg2 .. " inviting to taxi raid", 1)
       InviteUnit(arg2)
     end
   elseif event == "GUILD_ROSTER_UPDATE" then
@@ -324,14 +380,25 @@ SlashCmdList["WBC"] = function(functionName)
         print("need to know who you want to remove ex: \"/wbc remove taxi <player name>\"")
         return
       else
-        removeTaxiFromDB(arg2)
+        for player = 1, #WBCTaxis do
+          local name, guild, boss, status = strsplit(" ", WBCTaxis[player])
+          if name == arg2 then
+            debug("trying to remove player " .. "---" .. name .. "---", 1)
+            syncDB(name .. " " .. guild .. " " .. boss .. " inactive", "taxi")
+          end
+        end
       end
     elseif arg1 == "rep" then
       if arg2 == nil then
         print("need to know who you want to remove ex: \"/wbc remove taxi <player name>\"")
         return
       else
-        removeRepFromDB(arg2)
+        for player = 1, #GuildReps do
+          local name, guild, status = strsplit(" ", GuildReps[player])
+          if name == arg2 then
+            syncDB(name .. " " .. guild .. " inactive", "rep")
+          end
+        end
       end
     end
   end
@@ -345,13 +412,24 @@ SlashCmdList["WBC"] = function(functionName)
         return
       end
       local taxiName = name .. " " .. guildName .. " " .. arg2 .. " active"
-      table.insert(WBCTaxis, taxiName)
+      syncDB(taxiName, "taxi")
       WBCTaxi = "yes"
       print("registered you as a taxi for " .. arg2)
     elseif arg1 == "kazzak" or arg1 == "azuregos" then
       WBCboss = arg1
       inviteTaxis()
       -- guildBroadcast()
+    end
+  end
+
+  if command == "debug" then
+    if WBCDebug == "off" then
+      WBCDebug = "on"
+      WBCDebugLevel = tonumber(arg1)
+      print("enabled debugging with level " .. arg1)
+    elseif WBCDebug == "on" then
+      WBCDebug = "off"
+      WBCDebugLevel = "off"
     end
   end
 end

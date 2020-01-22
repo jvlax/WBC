@@ -4,7 +4,7 @@
 ## Notes: invite addon for the world boss coalition
 
 ## Author: Katyparry @ Zandalar Tribe
-## Version: 0.0.3
+## Version: 0.0.4
 
 ## SavedVariables: WBCPlayers, WBCGuildPlayers, WBCGuilds, GuildReps, WBCTaxis, WBCSync
 ## SavedVariablesPerCharacter: WBCTaxi
