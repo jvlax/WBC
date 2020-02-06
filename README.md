@@ -35,7 +35,7 @@ unless they uninstall the addon
 
 this will start a taxi raid for the boss
 
-ex: /wbc taxi boss
+ex: /wbc taxi kazzak
 
 
 this is the command that triggers the entire event.
